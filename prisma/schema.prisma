@@ -1,20 +1,33 @@
 generator client {
-  provider      = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-  provider      = "postgresql"
-  url           = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Car {
-  id            String   @id @default(uuid())
-  brand         String
-  model         String
-  year          Int
-  pricePerDay   Float
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String    @id @default(uuid())
+  brand        String
+  model        String
+  year         Int
+  pricePerDay  Float
+  ownerId      String
+  status       CarStatus @default(AVAILABLE)
+  description  String?
+  transmission String?
+  fuelType     String?
+  color        String?
+  location     String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@map("cars")
+}
+
+enum CarStatus {
+  AVAILABLE
+  RENTED
+  MAINTENANCE
 }
