@@ -7,12 +7,27 @@ import { AddCarDto } from '@carrent/shared';
 export class CarsController {
   constructor(private readonly carsService: CarsService) {}
 
-  @MessagePattern("cars.hello")
-  async sayHi() {
+  @MessagePattern("cars.get-cars-lest")
+  async getCarsList(
+    @Payload() data: { search: string; page: number; limit: number }
+  ) {
     try {
-      return await this.carsService.sayHi();
+      return await this.carsService.getCarsList(data.search, data.page, data.limit)
+    } catch(error) {
+      console.log("[Cars Microservice] getCarsList error:", error);
+      throw new RpcException({
+        statusCode: error.status || 500,
+        message: error.message || "Internal server error",
+      });
+    }
+  }
+
+  @MessagePattern("cars.get-car-by-id")
+  async getCarById({ id }: {id: string}) {
+    try {
+      return await this.carsService.getCarById(id)
     } catch (error) {
-      console.log("[Cars Microservice] sayHi error:", error);
+      console.log("[Cars Microservice] getCarById error:", error);
       throw new RpcException({
         statusCode: error.status || 500,
         message: error.message || "Internal server error",
@@ -26,6 +41,19 @@ export class CarsController {
       return await this.carsService.addCar(data.dto, data.ownerId);
     } catch (error) {
       console.log("[Cars Microservice] addCar error:", error);
+      throw new RpcException({
+        statusCode: error.status || 500,
+        message: error.message || "Internal server error",
+      });
+    }
+  }
+
+  @MessagePattern("cars.remove-car-by-id")
+  async removeCarById({ id }: { id: string }) {
+    try {
+      return await this.carsService.removeCarById(id)
+    } catch (error) {
+      console.log("[Cars Microservice] getCarById error:", error);
       throw new RpcException({
         statusCode: error.status || 500,
         message: error.message || "Internal server error",
