@@ -1,7 +1,7 @@
 import { MessagePattern, Payload, RpcException } from "@nestjs/microservices";
 import { CarsService } from "./cars.service";
 import { Controller } from "@nestjs/common";
-import { AddCarDto } from '@carrent/shared';
+import { AddCarDto, CarStatus, UpdateCarDto } from '@carrent/shared';
 
 @Controller()
 export class CarsController {
@@ -48,6 +48,19 @@ export class CarsController {
     }
   }
 
+  @MessagePattern("car.update-car")
+  async updateCar(@Payload() data: { dto:  UpdateCarDto}) {
+    try {
+      return await this.carsService.updateCar(data.dto)
+    } catch (error) {
+      console.log("[Cars Microservice] getCarById error:", error);
+      throw new RpcException({
+        statusCode: error.status || 500,
+        message: error.message || "Internal server error",
+      });
+    }
+  }
+
   @MessagePattern("cars.remove-car-by-id")
   async removeCarById({ id }: { id: string }) {
     try {
@@ -59,5 +72,18 @@ export class CarsController {
         message: error.message || "Internal server error",
       });
     }
+  }
+
+  @MessagePattern("cars.update-car-status")
+  async updateCarStatus({ id, status }: { id: string, status: CarStatus }) {
+    try {
+      return await this.carsService.updateCarStatus(id, status)
+    } catch (error) {
+      console.log("[Cars Microservice] getCarById error:", error);
+      throw new RpcException({
+        statusCode: error.status || 500,
+        message: error.message || "Internal server error",
+      });
+    } 
   }
 }

@@ -1,7 +1,7 @@
 import { HttpException, Injectable } from "@nestjs/common";
 import { PrismaService } from "./prisma.service";
 import { internalErrorHandler } from "./utils";
-import { AddCarDto, Car, CarFuelType, CarStatus, CarTransmission, PaginatedCarsResponse } from "@carrent/shared";
+import { AddCarDto, Car, CarFuelType, CarStatus, CarTransmission, PaginatedCarsResponse, UpdateCarDto } from "@carrent/shared";
 
 @Injectable()
 export class CarsService {
@@ -138,6 +138,25 @@ export class CarsService {
     }
   }
 
+  async updateCar(dto: UpdateCarDto): Promise<Car> {
+    try {
+      const { id, ...updatableFields } = dto
+      const foundCar = await this.prisma.car.findUnique({ where: { id } })
+      if (!foundCar) {
+        internalErrorHandler(404, `Car with id ${id} has been not found`)
+      }
+      await this.prisma.car.update({where: { id }, data: updatableFields})
+      return await this.getCarById(id)
+    } catch(error) {
+      console.error("Prisma error details:", error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      console.error("Unexpected error during updating car:", error);
+      throw internalErrorHandler(500, "Updating car failed");
+    }
+  }
+
   async removeCarById(id: string): Promise<string> {
     try {
       await this.prisma.car.delete({ where: { id } })
@@ -152,6 +171,28 @@ export class CarsService {
       }
       console.error("Unexpected error during removing car by id:", error);
       throw internalErrorHandler(500, "Remiving car by id failed");
+    }
+  }
+
+  async updateCarStatus(id: string, status: CarStatus): Promise<Car> {
+    try {
+      const updatedCar = await this.prisma.car.update({ where: { id }, data: { status }})
+      return {
+        ...updatedCar,
+        status: updatedCar.status as CarStatus,
+        transmission: updatedCar.transmission as CarTransmission,
+        fuelType: updatedCar.fuelType as CarFuelType,
+      }
+    } catch(error) {
+      console.error("Prisma error details:", error);
+      if (error.code === 'P2025') {
+        throw internalErrorHandler(404, `Car: ${id} is not found for updating`);
+      }
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      console.error("Unexpected error during updating car status:", error);
+      throw internalErrorHandler(500, "Updating car status failed");
     }
   }
 }
