@@ -1,7 +1,7 @@
 import { MessagePattern, Payload, RpcException } from "@nestjs/microservices";
 import { CarsService } from "./cars.service";
 import { Controller } from "@nestjs/common";
-import { AddCarDto, CarStatus, UpdateCarDto } from '@carrent/shared';
+import { AddCarDto, CarFuelType, CarStatus, CarTransmission, UpdateCarDto } from '@carrent/shared';
 
 @Controller()
 export class CarsController {
@@ -53,7 +53,7 @@ export class CarsController {
     try {
       return await this.carsService.updateCar(data.dto)
     } catch (error) {
-      console.log("[Cars Microservice] getCarById error:", error);
+      console.log("[Cars Microservice] updateCar error:", error);
       throw new RpcException({
         statusCode: error.status || 500,
         message: error.message || "Internal server error",
@@ -66,7 +66,7 @@ export class CarsController {
     try {
       return await this.carsService.removeCarById(id)
     } catch (error) {
-      console.log("[Cars Microservice] getCarById error:", error);
+      console.log("[Cars Microservice] removeCarById error:", error);
       throw new RpcException({
         statusCode: error.status || 500,
         message: error.message || "Internal server error",
@@ -79,11 +79,37 @@ export class CarsController {
     try {
       return await this.carsService.updateCarStatus(id, status)
     } catch (error) {
-      console.log("[Cars Microservice] getCarById error:", error);
+      console.log("[Cars Microservice] updateCarStatus error:", error);
       throw new RpcException({
         statusCode: error.status || 500,
         message: error.message || "Internal server error",
       });
     } 
+  }
+
+  @MessagePattern("cars.update-car-transmission")
+  async updateCarTransmission({ id, transmission }: { id: string, transmission: CarTransmission }) {
+    try {
+      return this.carsService.updateCarTransmission(id, transmission)
+    } catch(error) {
+      console.log("[Cars Microservice] updateCarTransmission error:", error);
+      throw new RpcException({
+        statusCode: error.status || 500,
+        message: error.message || "Internal server error",
+      });
+    }
+  }
+
+  @MessagePattern("cars.update-car-fuelType")
+  async updateCarFuelType({id, fuelType}: { id: string, fuelType: CarFuelType }) {
+    try {
+      return this.carsService.updateCarFuelType(id, fuelType)
+    } catch(error) {
+      console.log("[Cars Microservice] updateCarFuelType error:", error);
+      throw new RpcException({
+        statusCode: error.status || 500,
+        message: error.message || "Internal server error",
+      });
+    }
   }
 }

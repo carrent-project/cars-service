@@ -186,13 +186,57 @@ export class CarsService {
     } catch(error) {
       console.error("Prisma error details:", error);
       if (error.code === 'P2025') {
-        throw internalErrorHandler(404, `Car: ${id} is not found for updating`);
+        throw internalErrorHandler(404, `Car: ${id} is not found`);
       }
       if (error instanceof HttpException) {
         throw error;
       }
       console.error("Unexpected error during updating car status:", error);
       throw internalErrorHandler(500, "Updating car status failed");
+    }
+  }
+
+  async updateCarTransmission(id: string, transmission: CarTransmission): Promise<Car> {
+    try {
+      const updatedCar = await this.prisma.car.update({ where: { id }, data: { transmission }})
+      return {
+        ...updatedCar,
+        status: updatedCar.status as CarStatus,
+        transmission: updatedCar.transmission as CarTransmission,
+        fuelType: updatedCar.fuelType as CarFuelType,
+      }
+    } catch(error) {
+      console.error("Prisma error details:", error);
+      if (error.code === 'P2025') {
+        throw internalErrorHandler(404, `Car: ${id} is not found`);
+      }
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      console.error("Unexpected error during updating car transmission:", error);
+      throw internalErrorHandler(500, "Updating car status failed");
+    }
+  }
+
+  async updateCarFuelType(id: string, fuelType: CarFuelType): Promise<Car> {
+    try {
+      const updatedCar = await this.prisma.car.update({ where: { id }, data: { fuelType }})
+      return {
+        ...updatedCar,
+        status: updatedCar.status as CarStatus,
+        transmission: updatedCar.transmission as CarTransmission,
+        fuelType: updatedCar.fuelType as CarFuelType,
+      }
+    } catch(error) {
+      console.error("Prisma error details:", error);
+      if (error.code === 'P2025') {
+        throw internalErrorHandler(404, `Car: ${id} is not found`);
+      }
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      console.error("Unexpected error during updating car fuelType:", error);
+      throw internalErrorHandler(500, "Updating car fuelType failed");
     }
   }
 }
