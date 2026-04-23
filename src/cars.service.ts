@@ -81,7 +81,6 @@ export class CarsService {
   }
 
   async getCarById(id: string): Promise<Car> {
-    console.log("==> id: ", id)
     try {
       const car = await this.prisma.car.findUnique({
         where: { id },
