@@ -161,7 +161,7 @@ export class CarsService {
     try {
       await this.prisma.car.delete({ where: { id } })
       return id
-    } catch(error) {
+    } catch(error: any) {
       console.error("Prisma error details:", error);
       if (error.code === 'P2025') {
         throw internalErrorHandler(404, `Car: ${id} is not found`);
@@ -183,7 +183,7 @@ export class CarsService {
         transmission: updatedCar.transmission as CarTransmission,
         fuelType: updatedCar.fuelType as CarFuelType,
       }
-    } catch(error) {
+    } catch(error: any) {
       console.error("Prisma error details:", error);
       if (error.code === 'P2025') {
         throw internalErrorHandler(404, `Car: ${id} is not found`);
@@ -205,7 +205,7 @@ export class CarsService {
         transmission: updatedCar.transmission as CarTransmission,
         fuelType: updatedCar.fuelType as CarFuelType,
       }
-    } catch(error) {
+    } catch(error: any) {
       console.error("Prisma error details:", error);
       if (error.code === 'P2025') {
         throw internalErrorHandler(404, `Car: ${id} is not found`);
@@ -227,7 +227,7 @@ export class CarsService {
         transmission: updatedCar.transmission as CarTransmission,
         fuelType: updatedCar.fuelType as CarFuelType,
       }
-    } catch(error) {
+    } catch(error: any) {
       console.error("Prisma error details:", error);
       if (error.code === 'P2025') {
         throw internalErrorHandler(404, `Car: ${id} is not found`);
