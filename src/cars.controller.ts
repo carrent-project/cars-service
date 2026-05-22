@@ -91,7 +91,7 @@ export class CarsController {
   async updateCarTransmission({ id, transmission }: { id: string, transmission: CarTransmission }) {
     try {
       return this.carsService.updateCarTransmission(id, transmission)
-    } catch(error: any): any {
+    } catch(error: any) {
       console.log("[Cars Microservice] updateCarTransmission error:", error);
       throw new RpcException({
         statusCode: error.status || 500,
@@ -104,7 +104,7 @@ export class CarsController {
   async updateCarFuelType({id, fuelType}: { id: string, fuelType: CarFuelType }) {
     try {
       return this.carsService.updateCarFuelType(id, fuelType)
-    } catch(error: any): any {
+    } catch(error: any) {
       console.log("[Cars Microservice] updateCarFuelType error:", error);
       throw new RpcException({
         statusCode: error.status || 500,
