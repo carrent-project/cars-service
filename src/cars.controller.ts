@@ -65,7 +65,7 @@ export class CarsController {
   async removeCarById({ id }: { id: string }) {
     try {
       return await this.carsService.removeCarById(id)
-    } catch (error: any): any {
+    } catch (error: any) {
       console.log("[Cars Microservice] removeCarById error:", error);
       throw new RpcException({
         statusCode: error.status || 500,
@@ -78,7 +78,7 @@ export class CarsController {
   async updateCarStatus({ id, status }: { id: string, status: CarStatus }) {
     try {
       return await this.carsService.updateCarStatus(id, status)
-    } catch (error: any): any {
+    } catch (error: any) {
       console.log("[Cars Microservice] updateCarStatus error:", error);
       throw new RpcException({
         statusCode: error.status || 500,
