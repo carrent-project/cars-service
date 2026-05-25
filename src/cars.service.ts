@@ -1,24 +1,37 @@
-import { HttpException, Injectable } from "@nestjs/common";
+import { HttpException, Inject, Injectable } from "@nestjs/common";
 import { PrismaService } from "./prisma.service";
 import { internalErrorHandler } from "./utils";
-import { AddCarDto, Car, CarFuelType, CarStatus, CarTransmission, PaginatedCarsResponse, UpdateCarDto } from "@carrent/shared";
+import {
+  AddCarDto,
+  Car,
+  CarFuelType,
+  CarStatus,
+  CarTransmission,
+  PaginatedCarsResponse,
+  UpdateCarDto,
+} from "@carrent/shared";
+import { firstValueFrom } from "rxjs";
+import { ClientProxy } from "@nestjs/microservices";
 
 @Injectable()
 export class CarsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    @Inject("REVIEWS_SERVICE") private reviewsClient: ClientProxy,
+    private prisma: PrismaService,
+  ) {}
 
   async getCarsList(
     search: string,
     page: number = 1,
     limit: number = 10,
-  ): Promise<PaginatedCarsResponse> {
+  ): Promise<any> {
     try {
       const skip = (page - 1) * limit;
       const [cars, total] = await this.prisma.$transaction([
         this.prisma.car.findMany({
           skip,
           take: limit,
-          orderBy: { brand: 'asc' },
+          orderBy: { brand: "asc" },
           select: {
             id: true,
             brand: true,
@@ -37,29 +50,39 @@ export class CarsService {
           },
           where: {
             OR: [
-              { brand: { contains: search, mode: 'insensitive' } },
-              { model: { contains: search, mode: 'insensitive' } },
-              { color: { contains: search, mode: 'insensitive' } },
-              { description: { contains: search, mode: 'insensitive' } },
-              { location: { contains: search, mode: 'insensitive' } },
-            ]
-          }
+              { brand: { contains: search, mode: "insensitive" } },
+              { model: { contains: search, mode: "insensitive" } },
+              { color: { contains: search, mode: "insensitive" } },
+              { description: { contains: search, mode: "insensitive" } },
+              { location: { contains: search, mode: "insensitive" } },
+            ],
+          },
         }),
         this.prisma.car.count({
           where: {
             OR: [
-              { brand: { contains: search, mode: 'insensitive' } },
-              { model: { contains: search, mode: 'insensitive' } },
-              { color: { contains: search, mode: 'insensitive' } },
-              { description: { contains: search, mode: 'insensitive' } },
-              { location: { contains: search, mode: 'insensitive' } },
+              { brand: { contains: search, mode: "insensitive" } },
+              { model: { contains: search, mode: "insensitive" } },
+              { color: { contains: search, mode: "insensitive" } },
+              { description: { contains: search, mode: "insensitive" } },
+              { location: { contains: search, mode: "insensitive" } },
             ],
           },
         }),
-      ])
+      ]);
+
+      const carIds = cars.map((c) => c.id);
+      const ratings = await firstValueFrom(
+        this.reviewsClient.send("reviews.get-cars-average-rating", { carIds }),
+      );
+      const ratingsMap = new Map(ratings.map((r: any) => [r.carId, r.average]));
+      const carsWithRating = cars.map((car) => ({
+        ...car,
+        rating: ratingsMap.get(car.id) ?? 0,
+      }));
 
       return {
-        data: cars.map(car => ({
+        data: carsWithRating.map((car) => ({
           ...car,
           status: car.status as CarStatus,
           transmission: car.transmission as CarTransmission,
@@ -68,9 +91,9 @@ export class CarsService {
         total,
         page,
         limit,
-        totalPages: Math.ceil(total / limit)
-      }
-    } catch(error) {
+        totalPages: Math.ceil(total / limit),
+      };
+    } catch (error) {
       if (error instanceof HttpException) {
         throw error;
       }
@@ -99,11 +122,11 @@ export class CarsService {
           location: true,
           createdAt: true,
           updatedAt: true,
-        }
-      })
+        },
+      });
 
       if (!car) {
-        throw internalErrorHandler(404, "Car is not found by id")
+        throw internalErrorHandler(404, "Car is not found by id");
       }
 
       return {
@@ -111,9 +134,8 @@ export class CarsService {
         status: car.status as CarStatus,
         transmission: car.transmission as CarTransmission,
         fuelType: car.fuelType as CarFuelType,
-      }
-
-    } catch(error) {
+      };
+    } catch (error) {
       if (error instanceof HttpException) {
         throw error;
       }
@@ -140,14 +162,14 @@ export class CarsService {
 
   async updateCar(dto: UpdateCarDto): Promise<Car> {
     try {
-      const { id, ...updatableFields } = dto
-      const foundCar = await this.prisma.car.findUnique({ where: { id } })
+      const { id, ...updatableFields } = dto;
+      const foundCar = await this.prisma.car.findUnique({ where: { id } });
       if (!foundCar) {
-        internalErrorHandler(404, `Car with id ${id} has been not found`)
+        internalErrorHandler(404, `Car with id ${id} has been not found`);
       }
-      await this.prisma.car.update({where: { id }, data: updatableFields})
-      return await this.getCarById(id)
-    } catch(error) {
+      await this.prisma.car.update({ where: { id }, data: updatableFields });
+      return await this.getCarById(id);
+    } catch (error) {
       console.error("Prisma error details:", error);
       if (error instanceof HttpException) {
         throw error;
@@ -159,11 +181,11 @@ export class CarsService {
 
   async removeCarById(id: string): Promise<string> {
     try {
-      await this.prisma.car.delete({ where: { id } })
-      return id
-    } catch(error: any) {
+      await this.prisma.car.delete({ where: { id } });
+      return id;
+    } catch (error: any) {
       console.error("Prisma error details:", error);
-      if (error.code === 'P2025') {
+      if (error.code === "P2025") {
         throw internalErrorHandler(404, `Car: ${id} is not found`);
       }
       if (error instanceof HttpException) {
@@ -176,16 +198,19 @@ export class CarsService {
 
   async updateCarStatus(id: string, status: CarStatus): Promise<Car> {
     try {
-      const updatedCar = await this.prisma.car.update({ where: { id }, data: { status }})
+      const updatedCar = await this.prisma.car.update({
+        where: { id },
+        data: { status },
+      });
       return {
         ...updatedCar,
         status: updatedCar.status as CarStatus,
         transmission: updatedCar.transmission as CarTransmission,
         fuelType: updatedCar.fuelType as CarFuelType,
-      }
-    } catch(error: any) {
+      };
+    } catch (error: any) {
       console.error("Prisma error details:", error);
-      if (error.code === 'P2025') {
+      if (error.code === "P2025") {
         throw internalErrorHandler(404, `Car: ${id} is not found`);
       }
       if (error instanceof HttpException) {
@@ -196,40 +221,52 @@ export class CarsService {
     }
   }
 
-  async updateCarTransmission(id: string, transmission: CarTransmission): Promise<Car> {
+  async updateCarTransmission(
+    id: string,
+    transmission: CarTransmission,
+  ): Promise<Car> {
     try {
-      const updatedCar = await this.prisma.car.update({ where: { id }, data: { transmission }})
+      const updatedCar = await this.prisma.car.update({
+        where: { id },
+        data: { transmission },
+      });
       return {
         ...updatedCar,
         status: updatedCar.status as CarStatus,
         transmission: updatedCar.transmission as CarTransmission,
         fuelType: updatedCar.fuelType as CarFuelType,
-      }
-    } catch(error: any) {
+      };
+    } catch (error: any) {
       console.error("Prisma error details:", error);
-      if (error.code === 'P2025') {
+      if (error.code === "P2025") {
         throw internalErrorHandler(404, `Car: ${id} is not found`);
       }
       if (error instanceof HttpException) {
         throw error;
       }
-      console.error("Unexpected error during updating car transmission:", error);
+      console.error(
+        "Unexpected error during updating car transmission:",
+        error,
+      );
       throw internalErrorHandler(500, "Updating car status failed");
     }
   }
 
   async updateCarFuelType(id: string, fuelType: CarFuelType): Promise<Car> {
     try {
-      const updatedCar = await this.prisma.car.update({ where: { id }, data: { fuelType }})
+      const updatedCar = await this.prisma.car.update({
+        where: { id },
+        data: { fuelType },
+      });
       return {
         ...updatedCar,
         status: updatedCar.status as CarStatus,
         transmission: updatedCar.transmission as CarTransmission,
         fuelType: updatedCar.fuelType as CarFuelType,
-      }
-    } catch(error: any) {
+      };
+    } catch (error: any) {
       console.error("Prisma error details:", error);
-      if (error.code === 'P2025') {
+      if (error.code === "P2025") {
         throw internalErrorHandler(404, `Car: ${id} is not found`);
       }
       if (error instanceof HttpException) {
